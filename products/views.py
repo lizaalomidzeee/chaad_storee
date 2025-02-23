@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import GenericAPIView, ListAPIView, ListCreateAPIView
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, UpdateModelMixin, RetrieveModelMixin, DestroyModelMixin
 from products.models import (
     Product,
@@ -34,13 +34,13 @@ class ProductViewSet(ModelViewSet):
     
     
     
-class ReviewViewSet(ListCreateAPIView):
+class ReviewViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return self.queryset.filter(product_id=self.kwargs['product_id'])
+        return self.queryset.filter(product_id=self.kwargs['product_pk'])
 
     
 
@@ -57,7 +57,7 @@ class FavoriteProductViewSet(ModelViewSet):
 
     
 
-class CartViewSet(ListCreateAPIView):
+class CartViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated] 
@@ -70,7 +70,7 @@ class CartViewSet(ListCreateAPIView):
     
 
 
-class ProductTagListView(ListAPIView):
+class ProductTagListView(ListModelMixin, GenericViewSet):
     queryset = ProductTag.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
@@ -86,7 +86,7 @@ class ProductImageViewSet(ModelViewSet):
     http_method_names = ['get', 'post', 'delete']
 
     def get_queyset(self):
-        self.queryset.filter(product_id=self.kwargs['product_id'])
+        self.queryset.filter(product_id=self.kwargs['product_pk'])
 
     
 
