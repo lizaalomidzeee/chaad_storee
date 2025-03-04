@@ -14,12 +14,14 @@ from products.filters import ProductFilter, ReviewFilter
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, UpdateModelMixin, RetrieveModelMixin, DestroyModelMixin
 from products.models import (
+    CartItem,
     Product,
     Review,
     FavoriteProduct,
     Cart, ProductTag, ProductImage
 )
 from products.serializers import (
+    CartItemSerializer,
     ProductSerializer,
     ReviewSerializer,
     Favoriteproductserializer,
@@ -113,6 +115,29 @@ class ProductImageViewSet(ModelViewSet):
     def get_queyset(self):
         self.queryset.filter(product_id=self.kwargs['product_pk'])
 
+
+
+class CartItemViewSet(ModelViewSet):
+    queryset = CartItem.objects.all()
+    serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]
+    
+    
+    def get_queryset(self):
+        return self.queryset.filter(cart__user=self.request.user)
+    
+    
+    def perform_destroy(self, instance):
+        if instance.cart.user != self.request.user:
+            raise PermissionDenied("You do not have permission to delete this review")
+        instance.delete()
+        
+        
+    def perform_update(self, serializer):
+        isinstance = self.get_object()
+        if instance.cart.user != self.request.user:
+            raise PermissionDenied("You do not have permission to update this item")
+        serializer.save()
     
 
     
