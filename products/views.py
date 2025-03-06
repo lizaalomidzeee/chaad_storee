@@ -12,6 +12,7 @@ from rest_framework.filters import SearchFilter
 from products.pagination import ProductPagination
 from products.filters import ProductFilter, ReviewFilter
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle, ScopedRateThrottle
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, UpdateModelMixin, RetrieveModelMixin, DestroyModelMixin
 from products.models import (
     CartItem,
@@ -41,6 +42,7 @@ class ProductViewSet(ModelViewSet):
     filterset_class = ProductFilter
     pagination_class = ProductPagination
     search_fields = ['name', 'desctiption']
+    throttle_classes = [UserRateThrottle]
 
 
     
@@ -76,6 +78,8 @@ class FavoriteProductViewSet(ModelViewSet):
     serializer_class = Favoriteproductserializer
     permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'post', 'delete']
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'likes'
 
     def get_queryset(self):
         queryset = self.queryset.filter(user=self.request.user)
