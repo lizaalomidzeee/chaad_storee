@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'categories',
     'rest_framework',
     'django_filters',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -143,11 +144,21 @@ REST_FRAMEWORK = {
         'anon': '10/minute',
         'user': '10/minute',
         'likes': '20/minute'
-    }
+    },
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
 }
 
 
-PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.Argon2PasswordHasher'
-    'django.contrib.auth.hashers.PBKDF2PasswordHasher'
-]
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,
+    "SECURITY_DEFINITIONS" : {
+        "Bearer" : {
+            "type" : "apiKey",
+            "name" : "Authorization",
+            "in" : "header",
+            "description" : "შეიყვანეთ JWT ტოკენი შემდეგი პრინციპით Bearer <Token>"
+        }
+    }
+}
