@@ -1,11 +1,4 @@
-from urllib import request
-from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.generics import GenericAPIView, ListAPIView, ListCreateAPIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
@@ -14,6 +7,7 @@ from products.filters import ProductFilter, ReviewFilter
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle, ScopedRateThrottle
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, UpdateModelMixin, RetrieveModelMixin, DestroyModelMixin
+from products.permissions import IsObjectOwnerOrReadOnly
 from products.models import (
     CartItem,
     Product,
@@ -51,7 +45,7 @@ class ProductViewSet(ModelViewSet):
 class ReviewViewSet(ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsObjectOwnerOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['rating']
     filterset_class = ReviewFilter
