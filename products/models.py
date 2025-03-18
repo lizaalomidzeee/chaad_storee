@@ -2,6 +2,7 @@ from django.db import models
 from config.util_models.models import TimeStampModel
 from products.choices import Currency
 from django.core.validators import MaxValueValidator
+from django.contrib.auth.models import User
 
 
 class Product(TimeStampModel):
@@ -71,3 +72,12 @@ class CartItem(models.Model):
     
     def total_price(self):
         return self.quantity * self.price_at_time_of_addition
+    
+    
+class Product(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    user = models.ForeignKey(User, related_name='products', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name

@@ -36,6 +36,10 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = '__all__'
+    
     reviews = ReviewSerializer(many=True, read_only=True)
     tag_ids = serializers.PrimaryKeyRelatedField(
         source="tags",
@@ -61,6 +65,8 @@ class ProductSerializer(serializers.ModelSerializer):
         if tags is not None:
             instance.tags.set(tags) 
         return super().update(instance, validated_data)
+    
+    
     
 
 

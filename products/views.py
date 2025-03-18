@@ -6,8 +6,9 @@ from products.pagination import ProductPagination
 from products.filters import ProductFilter, ReviewFilter
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle, ScopedRateThrottle
-from rest_framework.mixins import CreateModelMixin, ListModelMixin, UpdateModelMixin, RetrieveModelMixin, DestroyModelMixin
+from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from products.permissions import IsObjectOwnerOrReadOnly
+from rest_framework.decorators import action
 from products.models import (
     CartItem,
     Product,
@@ -37,6 +38,13 @@ class ProductViewSet(ModelViewSet):
     pagination_class = ProductPagination
     search_fields = ['name', 'desctiption']
     throttle_classes = [UserRateThrottle]
+    
+    
+    @action(detail=False, methods=['get'], url_path='my_products')
+    def my_products(self, request):
+        user_products = Product.objects.filter(user=request.user)
+        serializer = self.get_serializer(user_products, many=True)
+        return Response(serializer.data)
 
 
     
