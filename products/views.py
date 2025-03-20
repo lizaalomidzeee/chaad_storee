@@ -40,11 +40,11 @@ class ProductViewSet(ModelViewSet):
     throttle_classes = [UserRateThrottle]
     
     
-    @action(detail=False, methods=['get'], url_path='my_products')
-    def my_products(self, request):
-        user_products = Product.objects.filter(user=request.user)
-        serializer = self.get_serializer(user_products, many=True)
-        return Response(serializer.data)
+    # @action(detail=False, methods=['get'], url_path='my_products')
+    # def my_products(self, request):
+    #     user_products = Product.objects.filter(user=request.user)
+    #     serializer = self.get_serializer(user_products, many=True)
+    #     return Response(serializer.data)
 
 
     

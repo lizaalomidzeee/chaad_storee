@@ -74,10 +74,10 @@ class CartItem(models.Model):
         return self.quantity * self.price_at_time_of_addition
     
     
-class Product(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    user = models.ForeignKey(User, related_name='products', on_delete=models.CASCADE)
+# class Product(models.Model):
+#     name = models.CharField(max_length=255)
+#     description = models.TextField()
+#     user = models.ForeignKey(User, related_name='products', on_delete=models.CASCADE)
 
-    def __str__(self):
-        return self.name
+#     def __str__(self):
+#         return self.name
