@@ -1,4 +1,8 @@
 from rest_framework.permissions import IsAuthenticated
+from django.core.validators import ValidationError
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
@@ -116,10 +120,16 @@ class ProductImageViewSet(ModelViewSet):
     queryset = ProductImage.objects.all()
     serializer_class = ProductImageSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names = ['get', 'post', 'delete']
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queyset(self):
         self.queryset.filter(product_id=self.kwargs['product_pk'])
+
+    def create(self, request, *args, **kwargs):
+        try:
+            super().create(request, *args, **kwargs)
+        except ValidationError as e:
+            return Response ({f"error":"{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 

@@ -54,12 +54,19 @@ class FavoriteProduct(TimeStampModel):
     user = models.ForeignKey('users.User', related_name='favorite_products', on_delete=models.SET_NULL, null=True, blank=True)
 
 
-
+from config.utils.image_validators import validate_image_count, validate_image_size, validate_image_resolution
 class ProductImage(TimeStampModel):
+    image = models.ImageField(upload_to='products/', validators=[validate_image_size, validate_image_resolution])
     product = models.ForeignKey('products.Product', related_name='images', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='products/')\
         
-        
+    def clean(self):
+        if self.product_id:
+            validate_image_count(self.product_id)
+        super().clean()   
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs) 
         
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete= models.CASCADE)
