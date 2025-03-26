@@ -9,6 +9,20 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
         fields = ['id', 'username', 'email', 'phone_number', 'first_name', 'last_name']
+        
+        
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, validators=[validate_password])
 
 
 
