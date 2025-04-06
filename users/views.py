@@ -11,7 +11,7 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
-from users.serializers import UserSerializer, RegisterSerializer, ChangePasswordSerializer, PasswordResetSerializer
+from users.serializers import UserSerializer, RegisterSerializer, ChangePasswordSerializer, PasswordResetSerializer, PasswordResetConfirmSerializer
 User=get_user_model()
 
 
@@ -36,15 +36,15 @@ class ProfileViewSet(GenericViewSet):
     def retrieve(self, request, *args, **kwargs):
         user = self.get_object()
         serializer = self.get_serializer(user)
-        return Response(serializer.data)
+        return response(serializer.data)
 
     def update(self, request, *args, **kwargs):
         user = self.get_object()
         serializer = self.get_serializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return response(serializer.data)
+        return response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'], url_path='change-password')
     def change_password(self, request):
@@ -52,17 +52,17 @@ class ProfileViewSet(GenericViewSet):
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             if not user.check_password(serializer.validated_data['old_password']):
-                return Response({'old_password': 'Incorrect password'}, status=status.HTTP_400_BAD_REQUEST)
+                return response({'old_password': 'Incorrect password'}, status=status.HTTP_400_BAD_REQUEST)
             user.set_password(serializer.validated_data['new_password'])
             user.save()
-            return Response({"detail": "Password changed successfully"})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return response({"detail": "Password changed successfully"})
+        return response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['delete'], url_path='delete')
     def delete_account(self, request):
         user = self.get_object()
         user.delete()
-        return Response({"detail": "Account deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+        return response({"detail": "Account deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
     
 
 
@@ -82,11 +82,9 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-            # reset_url = request.build_absolute_uri(
-            #     reverse('password_reset_confirm', kwargs={"uidb64": uid, "token": token})
-            # )
-
-            reset_url = f"http://127.0.0.1:8000/reset_password_confirm/{uid}/{token}/"
+            reset_url = request.build_absolute_uri(
+                reverse('password_reset_confirm', kwargs={"uidb64": uid, "token": token})
+            )
 
             send_mail(
                 'პაროლის აღდგენა',
@@ -101,3 +99,19 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ResetPasswordConfirmViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    serializer_class = PasswordResetConfirmSerializer
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('uidb64', openapi.IN_PATH, description= 'User id encoded with BASE64', type=openapi.TYPE_STRING),
+            openapi.Parameter('token', openapi.IN_PATH, description= 'password reset token', type=openapi.TYPE_STRING)
+
+        ]
+    )
+
+    def create(self, request, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return response.Response({"mesage": "პაროლი წარმატებით შეიცვალა"}, status=status.HTTP_200_OK)
+        return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
