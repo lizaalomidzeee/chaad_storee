@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import mixins, viewsets, permissions, response, status
 from django.core.mail import send_mail
 from django.urls import reverse
@@ -6,11 +7,13 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+import random
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, CreateModelMixin
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
+from users.models import EmailVerificationCode
 from users.serializers import UserSerializer, RegisterSerializer, ChangePasswordSerializer, PasswordResetSerializer, PasswordResetConfirmSerializer
 User=get_user_model()
 
@@ -25,6 +28,27 @@ class RegisterViewSet(CreateModelMixin, GenericViewSet):
     queryset=User.objects.all()
     serializer_class = RegisterSerializer
 
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            self.send_verification_code(user)
+            return response.Response({"detail": "User registered successsfully and verification code sent to email"}, status=status.HTTP_201_CREATED)
+        return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    def send_verification_code(self, user):
+        code = str(random.randint(100000, 999999))
+
+        EmailVerificationCode.objects.update_or_create(
+            user = user,
+            defaults = {"code": code, "created_at": timezone.now()}
+
+        )
+
+        subject = "Your verification code"
+        message = f"Hello {user.username}, your verification code is {code}"
+        send_mail(subject, message, 'no-reply@example.com', [user.email])
 
 class ProfileViewSet(GenericViewSet):
     serializer_class = UserSerializer
