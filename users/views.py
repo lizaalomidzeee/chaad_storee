@@ -8,13 +8,15 @@ from django.contrib.auth.tokens import default_token_generator
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import random
+from rest_framework.response import Response
+from datetime import timedelta
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, CreateModelMixin
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from users.models import EmailVerificationCode
-from users.serializers import UserSerializer, RegisterSerializer, ChangePasswordSerializer, PasswordResetSerializer, PasswordResetConfirmSerializer
+from users.serializers import UserSerializer, RegisterSerializer, ChangePasswordSerializer, PasswordResetSerializer, PasswordResetConfirmSerializer, EmailCodeResendSerializer, EmailCodeConfirmSerializer
 User=get_user_model()
 
 
@@ -49,6 +51,41 @@ class RegisterViewSet(CreateModelMixin, GenericViewSet):
         subject = "Your verification code"
         message = f"Hello {user.username}, your verification code is {code}"
         send_mail(subject, message, 'no-reply@example.com', [user.email])
+
+    @action(detail=False, methods=['post'], url_path='resend_code', serializer_class=EmailCodeResendSerializer)
+    def resend_code(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = serializer.validated_data['user']
+        existing_code = EmailVerificationCode.objects.filter(user=user).first()
+        if existing_code:
+            time_diff = timezone.now() - existing_code.created_at
+            if time_diff < timedelta(minutes=1):
+                wait_seconds = 60 - int(time_diff.total_seconds())
+                return response.Response({'detail': f'დაელოდე {wait_seconds} წამი კოდის ხელახლა გასაგზავნად'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+            
+        self.send_verification_code(user)
+        return response.Response({'message': 'ვერიფიკაციის კოდი ხელახლა არის გაგზავნილი'})
+    
+
+
+
+    @action(detail=False, methods=['post'], url_path='confirm_code', serializer_class=EmailCodeConfirmSerializer)
+    def confirm_code(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            user.is_active = True
+            user.save()
+            return response.Response({'message': 'მომხმარებელი არის წარმატებით გააქტიურებული'}, status=status.HTTP_200_OK)
+        return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+
 
 class ProfileViewSet(GenericViewSet):
     serializer_class = UserSerializer
@@ -139,3 +176,4 @@ class ResetPasswordConfirmViewSet(mixins.CreateModelMixin, viewsets.GenericViewS
             serializer.save()
             return response.Response({"mesage": "პაროლი წარმატებით შეიცვალა"}, status=status.HTTP_200_OK)
         return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
