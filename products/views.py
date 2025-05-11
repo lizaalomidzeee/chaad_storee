@@ -33,15 +33,37 @@ from products.serializers import (
 
 class ProductViewSet(ModelViewSet):
 
-    queryset = Product.objects.all()
+    queryset = Product.objects.all().prefetch_related('reviews', 'tags')
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['price', 'categories']
     filterset_class = ProductFilter
-    pagination_class = ProductPagination
+    # pagination_class = ProductPagination
     search_fields = ['name', 'desctiption']
     throttle_classes = [UserRateThrottle]
+
+    def get_serialized_data(self):
+        from django.core.cache import cache
+        cache_key = 'products_list'
+        cached_data = cache.get(cache_key)
+
+        if cached_data:
+            return cached_data
+        
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        cache.set('products_list', serializer.data, 60*10)
+        return serializer.data
+
+
+    def list(self, request, *args, **kwargs):
+        import time
+        start = time.time()
+        data = self.get_serialized_data()
+        end = time.time()
+        print(end-start)
+        return Response(data)
     
     
     # @action(detail=False, methods=['get'], url_path='my_products')
